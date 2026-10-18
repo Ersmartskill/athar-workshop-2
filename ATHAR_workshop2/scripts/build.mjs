@@ -1,0 +1,14 @@
+import { mkdir, copyFile, rm, cp, readFile, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+await rm('dist', {recursive:true, force:true});
+await mkdir('dist', {recursive:true});
+const files = ['index.html','about.html','offline.html','styles.css','data.js','app.js','pwa.js','manifest.webmanifest'];
+const assets = ['favicon.svg','icon-192.png','icon-512.png','icon-maskable.png','apple-touch-icon.png'];
+const hash = createHash('sha256');
+for (const file of [...files, ...assets.map(name => `assets/${name}`), 'sw.js']) hash.update(await readFile(file));
+for (const file of files) await copyFile(file, `dist/${file}`);
+await cp('assets','dist/assets',{recursive:true});
+await writeFile('dist/sw.js', (await readFile('sw.js','utf8')).replace('__ATHAR_BUILD__',hash.digest('hex').slice(0,16)));
+await writeFile('dist/404.html', await readFile('offline.html'));
+await writeFile('dist/.nojekyll','');
+console.log('Built dist/: independent about page, PWA shell, versioned cache and relative GitHub Pages paths.');
